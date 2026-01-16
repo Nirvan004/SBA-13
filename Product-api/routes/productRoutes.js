@@ -97,4 +97,34 @@ router.delete("/:id", async (req, res) => {
         res.status(500).json({ error: "Server Error" });
     }
 });
+
+router.get("/", async (req, res) => {
+    try {
+        const { category, minPrice, maxPrice, sortBy, page = 1, limit = 10 } = req.query;
+
+        const filter = {};
+        if (category) filter.category = category;
+        if (minPrice) filter.price = { ...filter.price, $gte: Number(minPrice) };
+        if (maxPrice) filter.price = { ...filter.price, $lte: Number(maxPrice) };
+
+        let sort = {};
+        if (sortBy) {
+            const [field, order] = sortBy.split("_");
+            sort[field] = order === "desc" ? -1 : 1;
+        }
+
+        const skip = (Number(page) - 1) * Number(limit);
+
+        const products = await Product.find(filter)
+            .sort(sort)
+            .skip(skip)
+            .limit(Number(limit));
+
+        res.json(products);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
 module.exports = router;
