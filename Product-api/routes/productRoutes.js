@@ -28,4 +28,53 @@ router.post("/", async (req, res) => {
     }
 });
 
+router.get("/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({ error: "Invalid product ID" });
+        }
+
+        const product = await Product.findById(id);
+
+        if (!product) {
+            return res.status(404).json({ error: "Product not found" });
+        }
+
+        res.json(product);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
+router.put("/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({ error: "Invalid product ID" });
+        }
+        const updatedProduct = await Product.findByIdAndUpdate(
+            id,
+            req.body,
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedProduct) {
+            return res.status(404).json({ error: "Product not found" });
+        }
+
+        res.json(updatedProduct);
+    } catch (error) {
+        if (error.name === "ValidationError") {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return res.status(400).json({ error: messages.join(", ") });
+        }
+
+        console.error(error);
+        res.status(500).json({ error: "Server Error" });
+    }
+});
+
 module.exports = router;
